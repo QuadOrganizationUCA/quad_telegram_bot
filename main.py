@@ -73,7 +73,24 @@ class StartupMotivationBot:
             return True
             
         except Exception as e:
-            logger.error(f"✗ Failed to connect to chat {chat_id}: {e}")
+            error_msg = str(e)
+            logger.error(f"✗ Failed to connect to chat {chat_id}: {error_msg}")
+            
+            # If topic not found, try without topic
+            if "thread not found" in error_msg.lower() and topic_id:
+                logger.warning(f"Topic {topic_id} not found, clearing and retrying without topic")
+                self.config.set_chat(chat_id, None)  # Clear invalid topic
+                try:
+                    await self.bot.send_message(
+                        chat_id=chat_id,
+                        text="✅ Bot connection test successful! (Topic was invalid and has been cleared)"
+                    )
+                    logger.info(f"✓ Test message sent successfully to chat {chat_id} (without topic)")
+                    return True
+                except Exception as e2:
+                    logger.error(f"✗ Failed even without topic: {e2}")
+                    return False
+            
             return False
     
     async def send_motivational_message(self):
@@ -106,7 +123,19 @@ class StartupMotivationBot:
             logger.info(f"Sent motivational message to {chat_id}")
         
         except Exception as e:
-            logger.error(f"Error sending motivational message: {e}")
+            error_msg = str(e)
+            logger.error(f"Error sending motivational message: {error_msg}")
+            
+            # If topic not found, clear it and retry without topic
+            if "thread not found" in error_msg.lower() and topic_id:
+                logger.warning(f"Topic {topic_id} not found, clearing topic_id and retrying without topic")
+                self.config.set_chat(chat_id, None)  # Clear invalid topic
+                try:
+                    await self.bot.send_message(chat_id=chat_id, text=message)
+                    self.config.increment_messages()
+                    logger.info(f"Sent motivational message to {chat_id} (without topic)")
+                except Exception as e2:
+                    logger.error(f"Failed to send even without topic: {e2}")
     
     async def send_reminder(self, reminder_message: str):
         """Send a reminder message."""
@@ -138,7 +167,19 @@ class StartupMotivationBot:
             logger.info(f"Sent reminder to {chat_id}: {message}")
         
         except Exception as e:
-            logger.error(f"Error sending reminder: {e}")
+            error_msg = str(e)
+            logger.error(f"Error sending reminder: {error_msg}")
+            
+            # If topic not found, clear it and retry without topic
+            if "thread not found" in error_msg.lower() and topic_id:
+                logger.warning(f"Topic {topic_id} not found, clearing topic_id and retrying without topic")
+                self.config.set_chat(chat_id, None)  # Clear invalid topic
+                try:
+                    await self.bot.send_message(chat_id=chat_id, text=message)
+                    self.config.increment_reminders()
+                    logger.info(f"Sent reminder to {chat_id} (without topic): {message}")
+                except Exception as e2:
+                    logger.error(f"Failed to send reminder even without topic: {e2}")
     
     def setup_scheduled_jobs(self):
         """Setup all scheduled jobs based on current configuration."""

@@ -402,16 +402,35 @@ class CommandHandlers:
             return
         
         if not context.args:
-            await update.message.reply_text("❌ Usage: /set_topic <topic_id>")
+            await update.message.reply_text(
+                "❌ Usage:\n"
+                "`/set_topic <topic_id>` - Set topic ID\n"
+                "`/set_topic clear` - Clear topic (send to main chat)",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Check if clearing topic
+        if context.args[0].lower() == 'clear':
+            chat_id, _ = self.config.get_chat()
+            if chat_id:
+                self.config.set_chat(chat_id, None)
+                await update.message.reply_text("✅ Topic cleared. Messages will be sent to main chat.")
+            else:
+                await update.message.reply_text("❌ No chat configured. Use /set_chat first.")
             return
         
         try:
             topic_id = int(context.args[0])
             chat_id = update.effective_chat.id
             self.config.set_chat(chat_id, topic_id)
-            await update.message.reply_text(f"✅ Topic thread ID set to: {topic_id}")
+            await update.message.reply_text(
+                f"✅ Topic thread ID set to: `{topic_id}`\n\n"
+                f"Use /test\\_connection to verify it works.",
+                parse_mode='Markdown'
+            )
         except ValueError:
-            await update.message.reply_text("❌ Topic ID must be a number.")
+            await update.message.reply_text("❌ Topic ID must be a number or 'clear'.")
     
     async def test_connection(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /test_connection command - test chat connectivity."""

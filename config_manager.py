@@ -76,8 +76,14 @@ class ConfigManager:
         if topic_id is not None:
             print(f"Setting topic_id to: {topic_id}")
             self.config["topic_id"] = topic_id
+        else:
+            # Clear topic_id when setting a new chat without specifying topic
+            if "topic_id" in self.config:
+                print("Clearing previous topic_id")
+                self.config["topic_id"] = None
         self._save_config()
         print(f"Chat ID after save: {self.config.get('chat_id')}")
+        print(f"Topic ID after save: {self.config.get('topic_id')}")
     
     def get_chat(self) -> tuple[Optional[int], Optional[int]]:
         """Get chat ID and topic ID."""
