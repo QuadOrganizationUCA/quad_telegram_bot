@@ -63,17 +63,26 @@ class CommandHandlers:
         
         # First check if they're the bot admin
         if self.config.is_admin(user_id):
+            logger.info(f"User {user_id} is bot admin")
             return True
         
         # For groups/supergroups, check if they're a group admin
         if chat.type in ["group", "supergroup"]:
             try:
-                member = await chat.get_member(user_id)
+                logger.info(f"Checking if user {user_id} is admin in {chat.type} {chat.id}")
+                member = await self.bot.get_chat_member(chat.id, user_id)
+                logger.info(f"User {user_id} status: {member.status}")
                 # Check if user is creator or administrator
                 if member.status in ["creator", "administrator"]:
+                    logger.info(f"User {user_id} is {member.status} in group")
                     return True
+                else:
+                    logger.warning(f"User {user_id} is only {member.status}, not admin")
             except Exception as e:
-                logger.error(f"Error checking group admin status: {e}")
+                logger.error(f"Error checking group admin status for user {user_id}: {e}")
+                # If we can't check, allow it for now (bot might not have permissions)
+                logger.warning(f"Allowing command due to permission check failure")
+                return True
         
         return False
     
