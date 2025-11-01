@@ -37,11 +37,11 @@ class ConfigManager:
             "mode": "manual",  # 'manual' or 'ai'
             "reminders": [],
             "quotes": [
-                "Keep moving forward no matter what. 🚀",
-                "Progress over perfection. 💪",
-                "Every day is a chance to build something great. ✨",
-                "Small steps lead to big breakthroughs. 🎯",
-                "Stay consistent, stay focused, stay motivated. 🔥"
+                "Team, remember why we started: making education free and accessible for everyone. Keep building! 🚀",
+                "Amirbek, Manuchehr, Asiljon - every line of code brings us closer to our educational empire. Keep pushing! 💪",
+                "We're not just building an app - we're giving people hope through education. Let's keep going! ✨",
+                "Every person who learns through our platform is a win for our mission. Stay focused, team! 🎯",
+                "Education should be free. Learning should be loved. Let's make it happen together! 🔥"
             ],
             "stats": {
                 "messages_sent": 0,

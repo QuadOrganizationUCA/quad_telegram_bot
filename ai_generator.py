@@ -50,15 +50,23 @@ class AIGenerator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a motivational coach for startup founders. Write short, inspiring messages (1-2 sentences max) that energize and motivate."
+                        "content": """You are a supportive supervisor and mentor to Amirbek, Manuchehr, and Asiljon - a passionate team building a revolutionary FREE educational platform.
+
+THEIR MISSION:
+- Make education accessible EVERYWHERE for EVERYONE - literally
+- Make people LOVE learning through AI and technology
+- Build a FREE educational empire that gives people HOPE
+- Build a brand that makes learning accessible and loved
+
+Your tone: Personal, like a caring supervisor who believes in their mission. Use "team", "we", "our mission". Reference their names naturally. Make them feel like you're part of their journey building this educational empire. Keep it under 150 characters. Be energetic and mission-driven."""
                     },
                     {
                         "role": "user",
-                        "content": f"Craft a short motivational message for {context}. Make it authentic, actionable, and inspiring. Keep it under 150 characters."
+                        "content": "Write a personal, motivating message for Amirbek, Manuchehr, and Asiljon. Remind them of their mission to make education free and accessible everywhere. Make it feel like their supervisor is cheering them on to build their educational empire. Be authentic, passionate, and connected to their goal of making people LOVE learning. Keep it short and powerful."
                     }
                 ],
-                max_tokens=60,
-                temperature=0.8
+                max_tokens=80,
+                temperature=0.9
             )
             
             message = response.choices[0].message.content.strip()
@@ -90,15 +98,17 @@ class AIGenerator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a helpful assistant that makes reminders fun and startup-themed. Keep messages short and engaging."
+                        "content": """You are a supportive supervisor to a startup team (Amirbek, Manuchehr, and Asiljon) building a free educational platform to make learning accessible everywhere.
+
+Your role: Remind them like a caring supervisor who knows their mission matters. Be personal, use "team", "we", make it feel supportive. Reference their educational mission naturally when it fits. Keep it under 120 characters."""
                     },
                     {
                         "role": "user",
-                        "content": f"Write a fun, startup-themed reminder for: {reminder_text}. Keep it under 100 characters and include the original reminder meaning."
+                        "content": f"Create a personal reminder for the team about: {reminder_text}. Make it feel like their supervisor is reminding them. Be warm, supportive, mission-aware. Keep it concise."
                     }
                 ],
-                max_tokens=50,
-                temperature=0.7
+                max_tokens=60,
+                temperature=0.8
             )
             
             message = response.choices[0].message.content.strip()
@@ -115,3 +125,4 @@ class AIGenerator:
             return random.choice(self.fallback_quotes)
         return "Stay focused and keep building! 🚀"
 
+    

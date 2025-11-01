@@ -334,7 +334,7 @@ class CommandHandlers:
             return
         
         try:
-            message = self.ai.generate_motivational_message("startup founders")
+            message = self.ai.generate_motivational_message("Amirbek, Manuchehr, and Asiljon")
             
             kwargs = {}
             if topic_id:

@@ -105,7 +105,7 @@ class StartupMotivationBot:
             # Generate message based on mode
             mode = self.config.get_mode()
             if mode == 'ai' and self.ai.is_available():
-                message = self.ai.generate_motivational_message("startup founders")
+                message = self.ai.generate_motivational_message("Amirbek, Manuchehr, and Asiljon")
             else:
                 message = self.config.get_random_quote()
             
