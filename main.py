@@ -228,8 +228,8 @@ class StartupMotivationBot:
         await self.app.start()
         logger.info("Starting bot...")
         
-        # Start polling
-        await self.app.updater.start_polling(allowed_updates=["message"])
+        # Start polling - allow all update types to handle commands properly
+        await self.app.updater.start_polling()
         
         # Keep running until stopped
         try:

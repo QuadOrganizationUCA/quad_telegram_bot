@@ -74,27 +74,27 @@ class CommandHandlers:
 🤖 *Startup Motivation Bot - Commands*
 
 *Configuration Commands:*
-/set_motivation_times `09:00, 14:00, 20:00` - Set daily motivation times
-/set_mode `ai` or `manual` - Switch between AI and static quotes
-/set_chat - Set this chat as target (use in the group)
-/set_topic `topic_id` - Set topic thread ID (optional)
+/set\\_motivation\\_times 09:00, 14:00, 20:00 - Set daily motivation times
+/set\\_mode ai or manual - Switch between AI and static quotes
+/set\\_chat - Set this chat as target (use in the group)
+/set\\_topic topic\\_id - Set topic thread ID (optional)
 
 *Reminder Commands:*
-/add_reminder `Monday 10:00 "Your message"` - Add weekly reminder
-/remove_reminder `"Your message"` - Remove a reminder
-/list_reminders - Show all reminders
+/add\\_reminder Monday 10:00 "Your message" - Add weekly reminder
+/remove\\_reminder "Your message" - Remove a reminder
+/list\\_reminders - Show all reminders
 
 *Quote Commands:*
-/add_quote `"Your quote"` - Add custom quote
-/quote_now - Generate and send AI quote now
+/add\\_quote "Your quote" - Add custom quote
+/quote\\_now - Generate and send AI quote now
 
 *Info Commands:*
-/show_schedule - Show current schedule
+/show\\_schedule - Show current schedule
 /summary - Show weekly stats
 /ping - Check bot status
 
 *Utility:*
-/toggle_ai - Quick toggle AI mode on/off
+/toggle\\_ai - Quick toggle AI mode on/off
 
 📝 Note: Only admin can use configuration commands.
         """
@@ -236,7 +236,9 @@ class CommandHandlers:
         
         text = "📋 *Current Reminders:*\n\n"
         for i, reminder in enumerate(reminders, 1):
-            text += f"{i}. {reminder['day']} {reminder['time']} → {reminder['message']}\n"
+            # Escape special characters in reminder messages
+            safe_msg = reminder['message'].replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+            text += f"{i}\\. {reminder['day']} {reminder['time']} → {safe_msg}\n"
         
         await update.message.reply_text(text, parse_mode='Markdown')
     
@@ -251,18 +253,20 @@ class CommandHandlers:
         text += f"*Mode:* {mode.upper()}\n"
         
         if chat_id:
-            text += f"*Chat ID:* {chat_id}\n"
+            text += f"*Chat ID:* `{chat_id}`\n"
             if topic_id:
-                text += f"*Topic ID:* {topic_id}\n"
+                text += f"*Topic ID:* `{topic_id}`\n"
         else:
-            text += "⚠️ *Chat not set. Use /set_chat in your group.*\n"
+            text += "⚠️ *Chat not set\\. Use /set\\_chat in your group\\.*\n"
         
         text += f"\n*Motivation Times:* {', '.join(times)}\n"
         
         if reminders:
             text += "\n*Reminders:*\n"
             for reminder in reminders:
-                text += f"  • {reminder['day']} {reminder['time']} → {reminder['message']}\n"
+                # Escape special characters in reminder messages
+                safe_msg = reminder['message'].replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
+                text += f"  • {reminder['day']} {reminder['time']} → {safe_msg}\n"
         else:
             text += "\n*Reminders:* None\n"
         
@@ -313,7 +317,7 @@ class CommandHandlers:
         messages = stats.get("messages_sent", 0)
         reminders = stats.get("reminders_sent", 0)
         
-        text = f"📊 *Weekly Summary*\n\n"
+        text = "📊 *Weekly Summary*\n\n"
         text += f"Motivational messages sent: {messages}\n"
         text += f"Reminders sent: {reminders}\n"
         text += f"\n*Mode:* {self.config.get_mode().upper()}\n"
@@ -327,7 +331,7 @@ class CommandHandlers:
         ai_status = "✅ Available" if self.ai.is_available() else "❌ Not configured"
         scheduler_status = "✅ Running" if self.scheduler.scheduler.running else "❌ Stopped"
         
-        text = f"🏓 *Bot Status*\n\n"
+        text = "🏓 *Bot Status*\n\n"
         text += f"AI Generation: {ai_status}\n"
         text += f"Scheduler: {scheduler_status}\n"
         text += f"Mode: {self.config.get_mode().upper()}\n"
