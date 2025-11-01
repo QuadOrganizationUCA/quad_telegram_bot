@@ -81,7 +81,8 @@ class CommandHandlers:
 *Configuration Commands:*
 /set\\_motivation\\_times 09:00, 14:00, 20:00 - Set daily motivation times
 /set\\_mode ai or manual - Switch between AI and static quotes
-/set\\_chat - Set this chat as target (use in the group)
+/set\\_group - Set this group as target (run in your group)
+/set\\_chat - Same as /set\\_group
 /set\\_topic topic\\_id - Set topic thread ID (optional)
 
 *Reminder Commands:*
@@ -363,7 +364,7 @@ class CommandHandlers:
                 "You're setting the bot to send messages to this private chat.\n\n"
                 "💡 *Tip:* To send to a group:\n"
                 "1. Add this bot to your group\n"
-                "2. Run `/set\\_chat` **in the group**, not here\n\n"
+                "2. Run `/set\\_chat` or `/set\\_group` **in the group**, not here\n\n"
                 "Continue anyway? The chat has been set to this private chat.",
                 parse_mode='Markdown'
             )
@@ -371,7 +372,7 @@ class CommandHandlers:
         # Get old chat ID for comparison
         old_chat_id, old_topic_id = self.config.get_chat()
         
-        # Set the new chat ID
+        # Set the new chat ID (clears topic automatically)
         self.config.set_chat(chat_id)
         
         # Verify it was saved correctly
@@ -383,8 +384,16 @@ class CommandHandlers:
         else:
             change_msg = ""
         
+        # Different message for groups vs private
+        if chat_type in ["group", "supergroup"]:
+            success_emoji = "🎉"
+            extra_msg = "\n\n✨ Perfect! This is a group chat."
+        else:
+            success_emoji = "✅"
+            extra_msg = ""
+        
         await update.message.reply_text(
-            f"✅ Target chat set successfully!\n\n"
+            f"{success_emoji} Target chat set successfully!{extra_msg}\n\n"
             f"{change_msg}"
             f"📍 *Chat Info:*\n"
             f"• ID: `{saved_chat_id}`\n"
@@ -394,6 +403,11 @@ class CommandHandlers:
             f"Use /test\\_connection to verify bot can send messages.",
             parse_mode='Markdown'
         )
+    
+    async def set_group(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /set_group command - alias for set_chat, more intuitive for groups."""
+        # Just call set_chat - same functionality
+        await self.set_chat(update, context)
     
     async def set_topic(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /set_topic command - set topic thread ID."""

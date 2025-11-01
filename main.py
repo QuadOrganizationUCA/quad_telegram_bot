@@ -249,6 +249,7 @@ class StartupMotivationBot:
             'summary': self.handlers.summary,
             'ping': self.handlers.ping,
             'set_chat': self.handlers.set_chat,
+            'set_group': self.handlers.set_group,  # Alias for set_chat
             'set_topic': self.handlers.set_topic,
             'test_connection': self.handlers.test_connection,
             'current_chat': self.handlers.current_chat,
