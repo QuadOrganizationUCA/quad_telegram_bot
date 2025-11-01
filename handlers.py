@@ -97,6 +97,7 @@ class CommandHandlers:
 /show\\_schedule - Show current schedule
 /summary - Show weekly stats
 /ping - Check bot status
+/current\\_chat - Show currently configured chat
 
 *Utility:*
 /toggle\\_ai - Quick toggle AI mode on/off
@@ -350,16 +351,43 @@ class CommandHandlers:
             await update.message.reply_text("❌ Only admin can set chat.")
             return
         
+        # Get current chat information
         chat_id = update.effective_chat.id
         chat_type = update.effective_chat.type
         chat_title = update.effective_chat.title or "Private Chat"
         
+        # Warn if setting to private chat
+        if chat_type == "private":
+            await update.message.reply_text(
+                "⚠️ *Warning: Private Chat Detected*\n\n"
+                "You're setting the bot to send messages to this private chat.\n\n"
+                "💡 *Tip:* To send to a group:\n"
+                "1. Add this bot to your group\n"
+                "2. Run `/set\\_chat` **in the group**, not here\n\n"
+                "Continue anyway? The chat has been set to this private chat.",
+                parse_mode='Markdown'
+            )
+        
+        # Get old chat ID for comparison
+        old_chat_id, old_topic_id = self.config.get_chat()
+        
+        # Set the new chat ID
         self.config.set_chat(chat_id)
+        
+        # Verify it was saved correctly
+        saved_chat_id, saved_topic_id = self.config.get_chat()
+        
+        # Build response message
+        if old_chat_id and old_chat_id != chat_id:
+            change_msg = f"📝 Changed from chat `{old_chat_id}` to `{chat_id}`\n\n"
+        else:
+            change_msg = ""
         
         await update.message.reply_text(
             f"✅ Target chat set successfully!\n\n"
+            f"{change_msg}"
             f"📍 *Chat Info:*\n"
-            f"• ID: `{chat_id}`\n"
+            f"• ID: `{saved_chat_id}`\n"
             f"• Type: {chat_type}\n"
             f"• Name: {chat_title}\n\n"
             f"Bot will send scheduled messages here.\n"
@@ -433,4 +461,44 @@ class CommandHandlers:
                 )
         else:
             await update.message.reply_text("❌ Test connection function not available.")
+    
+    async def current_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /current_chat command - show currently configured chat."""
+        chat_id, topic_id = self.config.get_chat()
+        
+        if not chat_id:
+            await update.message.reply_text(
+                "❌ No chat configured yet.\n\n"
+                "Use /set\\_chat in your target group to configure it.",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Try to get chat info
+        try:
+            chat = await self.bot.get_chat(chat_id)
+            chat_type = chat.type
+            chat_title = chat.title or chat.username or "Private Chat"
+            
+            text = "📍 *Currently Configured Chat:*\n\n"
+            text += f"• ID: `{chat_id}`\n"
+            text += f"• Type: {chat_type}\n"
+            text += f"• Name: {chat_title}\n"
+            
+            if topic_id:
+                text += f"• Topic ID: `{topic_id}`\n"
+            
+            text += f"\n✅ Bot will send scheduled messages to this chat."
+            
+            await update.message.reply_text(text, parse_mode='Markdown')
+        
+        except Exception as e:
+            await update.message.reply_text(
+                f"⚠️ *Configured Chat Info:*\n\n"
+                f"• ID: `{chat_id}`\n"
+                + (f"• Topic ID: `{topic_id}`\n" if topic_id else "") +
+                f"\n❌ Could not fetch chat details: `{str(e)}`\n\n"
+                f"The chat may no longer exist or bot was removed.",
+                parse_mode='Markdown'
+            )
 

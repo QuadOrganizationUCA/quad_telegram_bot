@@ -210,6 +210,7 @@ class StartupMotivationBot:
             'set_chat': self.handlers.set_chat,
             'set_topic': self.handlers.set_topic,
             'test_connection': self.handlers.test_connection,
+            'current_chat': self.handlers.current_chat,
         }
         
         for command, handler in command_map.items():

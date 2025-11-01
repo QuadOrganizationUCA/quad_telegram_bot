@@ -55,8 +55,9 @@ class ConfigManager:
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
+            print(f"✓ Config saved to {self.config_file}")
         except IOError as e:
-            print(f"Error saving config: {e}")
+            print(f"✗ Error saving config: {e}")
     
     # Admin and chat settings
     def set_admin(self, admin_id: int):
@@ -70,10 +71,13 @@ class ConfigManager:
     
     def set_chat(self, chat_id: int, topic_id: Optional[int] = None):
         """Set the target chat ID and optional topic ID."""
+        print(f"Setting chat_id to: {chat_id}")
         self.config["chat_id"] = chat_id
         if topic_id is not None:
+            print(f"Setting topic_id to: {topic_id}")
             self.config["topic_id"] = topic_id
         self._save_config()
+        print(f"Chat ID after save: {self.config.get('chat_id')}")
     
     def get_chat(self) -> tuple[Optional[int], Optional[int]]:
         """Get chat ID and topic ID."""
