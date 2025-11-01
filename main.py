@@ -1,0 +1,220 @@
+"""
+Main entry point for the Startup Motivation Telegram Bot
+Initializes bot, handlers, scheduler, and manages all scheduled tasks.
+"""
+
+import os
+import logging
+import asyncio
+from telegram import Bot
+from telegram.ext import Application, CommandHandler
+from dotenv import load_dotenv
+
+from config_manager import ConfigManager
+from ai_generator import AIGenerator
+from scheduler import Scheduler
+from handlers import CommandHandlers
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+
+class StartupMotivationBot:
+    """Main bot class that orchestrates all components."""
+    
+    def __init__(self, token: str, timezone: str = "UTC"):
+        self.token = token
+        self.timezone = timezone
+        
+        # Initialize components
+        self.config = ConfigManager()
+        self.ai = AIGenerator(fallback_quotes=self.config.get_quotes())
+        self.scheduler = Scheduler(timezone=timezone)
+        self.bot = None
+        self.app = None
+        self.handlers = None
+        self._reschedule_callback = None
+    
+    async def send_motivational_message(self):
+        """Send a motivational message based on current mode."""
+        chat_id, topic_id = self.config.get_chat()
+        
+        if not chat_id:
+            logger.warning("Chat ID not set. Skipping motivational message.")
+            return
+        
+        try:
+            # Generate message based on mode
+            mode = self.config.get_mode()
+            if mode == 'ai' and self.ai.is_available():
+                message = self.ai.generate_motivational_message("startup founders")
+            else:
+                message = self.config.get_random_quote()
+            
+            if not message:
+                message = "Stay focused and keep building! 🚀"
+            
+            # Prepare message parameters
+            kwargs = {}
+            if topic_id:
+                kwargs['message_thread_id'] = topic_id
+            
+            # Send message
+            await self.bot.send_message(chat_id=chat_id, text=message, **kwargs)
+            self.config.increment_messages()
+            logger.info(f"Sent motivational message to {chat_id}")
+        
+        except Exception as e:
+            logger.error(f"Error sending motivational message: {e}")
+    
+    async def send_reminder(self, reminder_message: str):
+        """Send a reminder message."""
+        chat_id, topic_id = self.config.get_chat()
+        
+        if not chat_id:
+            logger.warning("Chat ID not set. Skipping reminder.")
+            return
+        
+        try:
+            # Optionally enhance reminder with AI if in AI mode
+            mode = self.config.get_mode()
+            if mode == 'ai' and self.ai.is_available():
+                enhanced_message = self.ai.generate_reminder_message(reminder_message)
+                # Use enhanced only if it's different and not too long
+                if enhanced_message != reminder_message and len(enhanced_message) < 200:
+                    message = enhanced_message
+                else:
+                    message = reminder_message
+            else:
+                message = reminder_message
+            
+            kwargs = {}
+            if topic_id:
+                kwargs['message_thread_id'] = topic_id
+            
+            await self.bot.send_message(chat_id=chat_id, text=message, **kwargs)
+            self.config.increment_reminders()
+            logger.info(f"Sent reminder to {chat_id}: {message}")
+        
+        except Exception as e:
+            logger.error(f"Error sending reminder: {e}")
+    
+    def setup_scheduled_jobs(self):
+        """Setup all scheduled jobs based on current configuration."""
+        # Clear existing jobs
+        self.scheduler.remove_all_jobs()
+        
+        # Add motivational message jobs
+        motivation_times = self.config.get_motivation_times()
+        for time_str in motivation_times:
+            job_id = f"motivation_{time_str.replace(':', '_')}"
+            self.scheduler.add_daily_job(
+                func=self.send_motivational_message,
+                time_str=time_str,
+                job_id=job_id
+            )
+        
+        # Add reminder jobs
+        reminders = self.config.get_reminders()
+        for reminder in reminders:
+            job_id = f"reminder_{reminder['day']}_{reminder['time'].replace(':', '_')}"
+            self.scheduler.add_weekly_job(
+                func=self.send_reminder,
+                day=reminder['day'],
+                time_str=reminder['time'],
+                job_id=job_id,
+                kwargs={'reminder_message': reminder['message']}
+            )
+        
+        logger.info(f"Setup {len(motivation_times)} motivation jobs and {len(reminders)} reminder jobs")
+    
+    def setup_handlers(self):
+        """Setup all command handlers."""
+        self.handlers = CommandHandlers(
+            config_manager=self.config,
+            ai_generator=self.ai,
+            scheduler=self.scheduler,
+            bot_instance=self.bot
+        )
+        # Pass reschedule callback to handlers
+        self.handlers.set_reschedule_callback(self.setup_scheduled_jobs)
+        
+        # Register all command handlers
+        command_map = {
+            'start': self.handlers.start,
+            'help': self.handlers.help,
+            'set_motivation_times': self.handlers.set_motivation_times,
+            'set_mode': self.handlers.set_mode,
+            'toggle_ai': self.handlers.toggle_ai,
+            'add_reminder': self.handlers.add_reminder,
+            'remove_reminder': self.handlers.remove_reminder,
+            'list_reminders': self.handlers.list_reminders,
+            'show_schedule': self.handlers.show_schedule,
+            'add_quote': self.handlers.add_quote,
+            'quote_now': self.handlers.quote_now,
+            'summary': self.handlers.summary,
+            'ping': self.handlers.ping,
+            'set_chat': self.handlers.set_chat,
+            'set_topic': self.handlers.set_topic,
+        }
+        
+        for command, handler in command_map.items():
+            self.app.add_handler(CommandHandler(command, handler))
+        
+        logger.info("Command handlers registered")
+    
+    async def post_init(self, application: Application):
+        """Called after application initialization."""
+        self.bot = application.bot
+        self.setup_scheduled_jobs()
+    
+    async def run(self):
+        """Run the bot."""
+        # Create application
+        self.app = Application.builder().token(self.token).post_init(self.post_init).build()
+        
+        # Setup handlers
+        self.setup_handlers()
+        
+        # Start scheduler
+        self.scheduler.start()
+        
+        # Run bot
+        logger.info("Starting bot...")
+        await self.app.run_polling(allowed_updates=["message"])
+
+
+async def main():
+    """Main entry point."""
+    # Get environment variables
+    token = os.getenv("BOT_TOKEN")
+    if not token:
+        raise ValueError("BOT_TOKEN environment variable is required")
+    
+    admin_id = os.getenv("ADMIN_ID")
+    timezone = os.getenv("TIMEZONE", "UTC")
+    
+    # Initialize bot
+    bot = StartupMotivationBot(token=token, timezone=timezone)
+    
+    # Set admin ID if provided
+    if admin_id:
+        try:
+            bot.config.set_admin(int(admin_id))
+        except ValueError:
+            logger.warning(f"Invalid ADMIN_ID: {admin_id}")
+    
+    # Run bot
+    await bot.run()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
