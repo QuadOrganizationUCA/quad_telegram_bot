@@ -43,6 +43,39 @@ class StartupMotivationBot:
         self.handlers = None
         self._reschedule_callback = None
     
+    async def test_chat_connection(self) -> bool:
+        """
+        Test if bot can send messages to the configured chat.
+        Returns True if successful, False otherwise.
+        """
+        chat_id, topic_id = self.config.get_chat()
+        
+        if not chat_id:
+            logger.warning("Chat ID not configured. Cannot test connection.")
+            return False
+        
+        try:
+            # Try to get chat information
+            chat = await self.bot.get_chat(chat_id)
+            logger.info(f"✓ Chat connection verified: {chat.title or chat.username or chat_id}")
+            
+            # Optionally send a test message
+            kwargs = {}
+            if topic_id:
+                kwargs['message_thread_id'] = topic_id
+            
+            test_message = await self.bot.send_message(
+                chat_id=chat_id,
+                text="✅ Bot connection test successful! Ready to send scheduled messages.",
+                **kwargs
+            )
+            logger.info(f"✓ Test message sent successfully to chat {chat_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"✗ Failed to connect to chat {chat_id}: {e}")
+            return False
+    
     async def send_motivational_message(self):
         """Send a motivational message based on current mode."""
         chat_id, topic_id = self.config.get_chat()
@@ -156,6 +189,8 @@ class StartupMotivationBot:
         )
         # Pass reschedule callback to handlers
         self.handlers.set_reschedule_callback(self.setup_scheduled_jobs)
+        # Pass test connection callback to handlers
+        self.handlers.set_test_connection_callback(self.test_chat_connection)
         
         # Register all command handlers
         command_map = {
@@ -174,6 +209,7 @@ class StartupMotivationBot:
             'ping': self.handlers.ping,
             'set_chat': self.handlers.set_chat,
             'set_topic': self.handlers.set_topic,
+            'test_connection': self.handlers.test_connection,
         }
         
         for command, handler in command_map.items():
@@ -227,6 +263,16 @@ class StartupMotivationBot:
         # Start the bot
         await self.app.start()
         logger.info("Starting bot...")
+        
+        # Test chat connection if configured
+        chat_id, _ = self.config.get_chat()
+        if chat_id:
+            logger.info("Testing chat connection...")
+            connection_ok = await self.test_chat_connection()
+            if not connection_ok:
+                logger.warning("⚠️ Chat connection test failed. Please verify chat configuration with /set_chat")
+        else:
+            logger.info("ℹ️ No chat configured yet. Use /set_chat in your target group to configure.")
         
         # Start polling - allow all update types to handle commands properly
         await self.app.updater.start_polling()

@@ -31,6 +31,7 @@ class CommandHandlers:
         self.bot = bot_instance
         self.send_message_func = None  # Will be set by main.py
         self.reschedule_callback = None  # Callback to reschedule jobs
+        self.test_connection_func = None  # Callback to test chat connection
     
     def set_send_message_func(self, func):
         """Set the function to send messages (for scheduled tasks)."""
@@ -39,6 +40,10 @@ class CommandHandlers:
     def set_reschedule_callback(self, func):
         """Set the callback to reschedule jobs when settings change."""
         self.reschedule_callback = func
+    
+    def set_test_connection_callback(self, func):
+        """Set the callback to test chat connection."""
+        self.test_connection_func = func
     
     def _trigger_reschedule(self):
         """Trigger job rescheduling if callback is set."""
@@ -95,6 +100,7 @@ class CommandHandlers:
 
 *Utility:*
 /toggle\\_ai - Quick toggle AI mode on/off
+/test\\_connection - Test if bot can send messages to configured chat
 
 📝 Note: Only admin can use configuration commands.
         """
@@ -345,11 +351,20 @@ class CommandHandlers:
             return
         
         chat_id = update.effective_chat.id
+        chat_type = update.effective_chat.type
+        chat_title = update.effective_chat.title or "Private Chat"
+        
         self.config.set_chat(chat_id)
         
         await update.message.reply_text(
-            f"✅ Target chat set to: {chat_id}\n\n"
-            f"Bot will send messages here. Use /set_topic <topic_id> to specify a topic thread."
+            f"✅ Target chat set successfully!\n\n"
+            f"📍 *Chat Info:*\n"
+            f"• ID: `{chat_id}`\n"
+            f"• Type: {chat_type}\n"
+            f"• Name: {chat_title}\n\n"
+            f"Bot will send scheduled messages here.\n"
+            f"Use /test\\_connection to verify bot can send messages.",
+            parse_mode='Markdown'
         )
     
     async def set_topic(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -369,4 +384,53 @@ class CommandHandlers:
             await update.message.reply_text(f"✅ Topic thread ID set to: {topic_id}")
         except ValueError:
             await update.message.reply_text("❌ Topic ID must be a number.")
+    
+    async def test_connection(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /test_connection command - test chat connectivity."""
+        if not self._check_admin(update.effective_user.id):
+            await update.message.reply_text("❌ Only admin can test connection.")
+            return
+        
+        chat_id, topic_id = self.config.get_chat()
+        
+        if not chat_id:
+            await update.message.reply_text(
+                "❌ No chat configured yet.\n"
+                "Use /set_chat in your target group first."
+            )
+            return
+        
+        await update.message.reply_text("🔄 Testing connection to configured chat...")
+        
+        # Call the test connection function if available
+        if self.test_connection_func:
+            try:
+                success = await self.test_connection_func()
+                if success:
+                    await update.message.reply_text(
+                        "✅ Connection test successful!\n\n"
+                        f"Bot can send messages to chat `{chat_id}`"
+                        + (f" in topic `{topic_id}`" if topic_id else "") + ".\n\n"
+                        "Scheduled messages will be delivered correctly.",
+                        parse_mode='Markdown'
+                    )
+                else:
+                    await update.message.reply_text(
+                        "❌ Connection test failed!\n\n"
+                        f"Bot cannot send messages to chat `{chat_id}`.\n\n"
+                        "Possible issues:\n"
+                        "• Bot not added to the group\n"
+                        "• Bot doesn't have send message permission\n"
+                        "• Chat ID is incorrect\n"
+                        "• Topic ID is invalid (if using topics)\n\n"
+                        "Please check the configuration and try again.",
+                        parse_mode='Markdown'
+                    )
+            except Exception as e:
+                await update.message.reply_text(
+                    f"❌ Error during connection test:\n`{str(e)}`",
+                    parse_mode='Markdown'
+                )
+        else:
+            await update.message.reply_text("❌ Test connection function not available.")
 
