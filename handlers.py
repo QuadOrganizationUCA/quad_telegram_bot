@@ -51,10 +51,31 @@ class CommandHandlers:
             self.reschedule_callback()
     
     def _check_admin(self, user_id: int) -> bool:
-        """Check if user is admin."""
+        """Check if user is the bot admin."""
         if not self.config.is_admin(user_id):
             return False
         return True
+    
+    async def _check_group_admin(self, update: Update) -> bool:
+        """Check if user is admin in the current chat (for group commands)."""
+        user_id = update.effective_user.id
+        chat = update.effective_chat
+        
+        # First check if they're the bot admin
+        if self.config.is_admin(user_id):
+            return True
+        
+        # For groups/supergroups, check if they're a group admin
+        if chat.type in ["group", "supergroup"]:
+            try:
+                member = await chat.get_member(user_id)
+                # Check if user is creator or administrator
+                if member.status in ["creator", "administrator"]:
+                    return True
+            except Exception as e:
+                logger.error(f"Error checking group admin status: {e}")
+        
+        return False
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
@@ -348,8 +369,9 @@ class CommandHandlers:
     
     async def set_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /set_chat command - set current chat as target."""
-        if not self._check_admin(update.effective_user.id):
-            await update.message.reply_text("❌ Only admin can set chat.")
+        # Check if user is admin (bot admin or group admin)
+        if not await self._check_group_admin(update):
+            await update.message.reply_text("❌ Only admins can set the target chat.")
             return
         
         # Get current chat information
@@ -411,8 +433,9 @@ class CommandHandlers:
     
     async def set_topic(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /set_topic command - set topic thread ID."""
-        if not self._check_admin(update.effective_user.id):
-            await update.message.reply_text("❌ Only admin can set topic.")
+        # Check if user is admin (bot admin or group admin)
+        if not await self._check_group_admin(update):
+            await update.message.reply_text("❌ Only admins can set topic.")
             return
         
         if not context.args:
@@ -448,8 +471,9 @@ class CommandHandlers:
     
     async def test_connection(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /test_connection command - test chat connectivity."""
-        if not self._check_admin(update.effective_user.id):
-            await update.message.reply_text("❌ Only admin can test connection.")
+        # Check if user is admin (bot admin or group admin)
+        if not await self._check_group_admin(update):
+            await update.message.reply_text("❌ Only admins can test connection.")
             return
         
         chat_id, topic_id = self.config.get_chat()
