@@ -16,9 +16,11 @@ logger = logging.getLogger(__name__)
 class Scheduler:
     """Manages all scheduled tasks using APScheduler."""
     
-    def __init__(self, timezone: str = "UTC"):
+    def __init__(self, timezone: str = "UTC", event_loop=None):
+        # Don't pass event_loop - let it use the current running loop
         self.scheduler = AsyncIOScheduler(timezone=timezone)
         self.job_ids = set()
+        self._event_loop = event_loop
     
     def start(self):
         """Start the scheduler."""

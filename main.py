@@ -36,7 +36,8 @@ class StartupMotivationBot:
         # Initialize components
         self.config = ConfigManager()
         self.ai = AIGenerator(fallback_quotes=self.config.get_quotes())
-        self.scheduler = Scheduler(timezone=timezone)
+        # Scheduler will be initialized with event loop later
+        self.scheduler = None
         self.bot = None
         self.app = None
         self.handlers = None
@@ -108,6 +109,11 @@ class StartupMotivationBot:
     
     def setup_scheduled_jobs(self):
         """Setup all scheduled jobs based on current configuration."""
+        # Check if scheduler is initialized
+        if self.scheduler is None:
+            logger.warning("Scheduler not initialized yet, skipping job setup")
+            return
+        
         # Clear existing jobs
         self.scheduler.remove_all_jobs()
         
@@ -137,10 +143,15 @@ class StartupMotivationBot:
     
     def setup_handlers(self):
         """Setup all command handlers."""
+        # Create a temporary scheduler reference (will be updated in post_init)
+        # We'll pass None and update it later since scheduler needs event loop
+        from scheduler import Scheduler
+        temp_scheduler = Scheduler(timezone=self.timezone)
+        
         self.handlers = CommandHandlers(
             config_manager=self.config,
             ai_generator=self.ai,
-            scheduler=self.scheduler,
+            scheduler=temp_scheduler,  # Will be updated in post_init
             bot_instance=self.bot
         )
         # Pass reschedule callback to handlers
@@ -173,22 +184,64 @@ class StartupMotivationBot:
     async def post_init(self, application: Application):
         """Called after application initialization."""
         self.bot = application.bot
+        
+        # Initialize scheduler - it will use the current running event loop
+        if self.scheduler is None:
+            # Reinitialize with proper scheduler
+            from scheduler import Scheduler
+            self.scheduler = Scheduler(timezone=self.timezone)
+            # Start scheduler - it will attach to the current event loop
+            self.scheduler.start()
+        
+        # Update handlers with scheduler reference
+        if self.handlers:
+            self.handlers.scheduler = self.scheduler
+        
         self.setup_scheduled_jobs()
     
     async def run(self):
         """Run the bot."""
         # Create application
-        self.app = Application.builder().token(self.token).post_init(self.post_init).build()
+        self.app = Application.builder().token(self.token).build()
         
-        # Setup handlers
+        # Setup handlers first
         self.setup_handlers()
         
-        # Start scheduler
-        self.scheduler.start()
+        # Initialize the application
+        await self.app.initialize()
+        self.bot = self.app.bot
         
-        # Run bot
+        # Initialize scheduler after bot is initialized
+        from scheduler import Scheduler
+        if self.scheduler is None:
+            self.scheduler = Scheduler(timezone=self.timezone)
+            self.scheduler.start()
+        
+        # Update handlers with scheduler reference
+        if self.handlers:
+            self.handlers.scheduler = self.scheduler
+        
+        # Setup scheduled jobs
+        self.setup_scheduled_jobs()
+        
+        # Start the bot
+        await self.app.start()
         logger.info("Starting bot...")
-        await self.app.run_polling(allowed_updates=["message"])
+        
+        # Start polling
+        await self.app.updater.start_polling(allowed_updates=["message"])
+        
+        # Keep running until stopped
+        try:
+            await asyncio.Event().wait()
+        except KeyboardInterrupt:
+            logger.info("Shutting down...")
+        finally:
+            await self.app.updater.stop()
+            await self.app.stop()
+            await self.app.shutdown()
+            if self.scheduler:
+                self.scheduler.stop()
 
 
 async def main():
