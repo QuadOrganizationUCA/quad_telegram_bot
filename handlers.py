@@ -70,6 +70,10 @@ class CommandHandlers:
         if chat.type in ["group", "supergroup"]:
             try:
                 logger.info(f"Checking if user {user_id} is admin in {chat.type} {chat.id}")
+                # Note: self.bot should be available here, but we need to ensure it's set
+                if not self.bot:
+                    logger.warning("self.bot is None, cannot check admin status")
+                    return True  # Allow if we can't check
                 member = await self.bot.get_chat_member(chat.id, user_id)
                 logger.info(f"User {user_id} status: {member.status}")
                 # Check if user is creator or administrator
@@ -340,7 +344,8 @@ class CommandHandlers:
             if topic_id:
                 kwargs['message_thread_id'] = topic_id
             
-            await self.bot.send_message(chat_id=chat_id, text=message, **kwargs)
+            # Use context.bot instead of self.bot
+            await context.bot.send_message(chat_id=chat_id, text=message, **kwargs)
             self.config.increment_messages()
             
             await update.message.reply_text(f"✅ Sent motivational message to group!")
@@ -542,7 +547,8 @@ class CommandHandlers:
         
         # Try to get chat info
         try:
-            chat = await self.bot.get_chat(chat_id)
+            # Use context.bot instead of self.bot
+            chat = await context.bot.get_chat(chat_id)
             chat_type = chat.type
             chat_title = chat.title or chat.username or "Private Chat"
             
