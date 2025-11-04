@@ -130,9 +130,9 @@ This bot is ready for **Render deployment** with the included configuration file
 git push origin main
 ```
 
-2. **Create a new Web Service on Render:**
+2. **Create a Background Worker on Render:**
    - Go to [Render Dashboard](https://dashboard.render.com/)
-   - Click "New +" → "Web Service"
+   - Click "New +" → "Background Worker"
    - Connect your GitHub repository
    - Select `quad_telegram_bot` repo
 
@@ -142,6 +142,8 @@ git push origin main
    - **Build Command:** `pip install -r requirements.txt`
    - **Start Command:** `python3 main.py`
    - **Instance Type:** Free (sufficient for small teams)
+   
+   **Note:** Use "Background Worker", NOT "Web Service" - the bot doesn't need to expose a port.
 
 4. **Add Environment Variables:**
    Go to "Environment" tab and add:
@@ -153,15 +155,24 @@ git push origin main
    ```
 
 5. **Deploy:**
-   - Click "Create Web Service"
+   - Click "Create Background Worker"
    - Render will automatically deploy your bot
    - Bot will start running 24/7
 
-6. **Configure in Telegram:**
+6. **⚠️ Important: Stop local bot instance**
+   Before the bot works on Render, you MUST stop any local instances:
+   ```bash
+   # Find and stop local bot
+   pkill -f "python3 main.py"
+   ```
+   **Only ONE bot instance can run at a time** (Telegram limitation)
+
+7. **Configure in Telegram:**
    - Add bot to your group
    - Send `/set_group` to configure it
+   - Send `/test_connection` to verify it's working
 
-**Note:** The free tier on Render may spin down after inactivity. For 24/7 uptime, consider upgrading to a paid plan ($7/month).
+**Note:** Background workers on Render free tier run 24/7 (unlike web services that spin down). Perfect for bots!
 
 ---
 

@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: worker
     name: quad-telegram-bot
     env: python
     region: oregon
