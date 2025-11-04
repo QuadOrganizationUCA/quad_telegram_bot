@@ -1,5 +1,5 @@
 services:
-  - type: worker
+  - type: web
     name: quad-telegram-bot
     env: python
     region: oregon
@@ -15,4 +15,6 @@ services:
         sync: false
       - key: TIMEZONE
         value: Asia/Tashkent
+      - key: RENDER
+        value: "true"
 

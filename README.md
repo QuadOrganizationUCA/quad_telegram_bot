@@ -130,9 +130,9 @@ This bot is ready for **Render deployment** with the included configuration file
 git push origin main
 ```
 
-2. **Create a Background Worker on Render:**
+2. **Create a Web Service on Render:**
    - Go to [Render Dashboard](https://dashboard.render.com/)
-   - Click "New +" → "Background Worker"
+   - Click "New +" → "Web Service"
    - Connect your GitHub repository
    - Select `quad_telegram_bot` repo
 
@@ -141,9 +141,9 @@ git push origin main
    - **Environment:** `Python 3`
    - **Build Command:** `pip install -r requirements.txt`
    - **Start Command:** `python3 main.py`
-   - **Instance Type:** Free (sufficient for small teams)
+   - **Instance Type:** Free
    
-   **Note:** Use "Background Worker", NOT "Web Service" - the bot doesn't need to expose a port.
+   **Note:** The bot includes a health check server to satisfy Render's port requirement on the free tier.
 
 4. **Add Environment Variables:**
    Go to "Environment" tab and add:
@@ -155,9 +155,10 @@ git push origin main
    ```
 
 5. **Deploy:**
-   - Click "Create Background Worker"
+   - Click "Create Web Service"
    - Render will automatically deploy your bot
-   - Bot will start running 24/7
+   - The bot will expose a health check endpoint on the assigned port
+   - Visit your service URL to see bot status
 
 6. **⚠️ Important: Stop local bot instance**
    Before the bot works on Render, you MUST stop any local instances:
@@ -172,7 +173,7 @@ git push origin main
    - Send `/set_group` to configure it
    - Send `/test_connection` to verify it's working
 
-**Note:** Background workers on Render free tier run 24/7 (unlike web services that spin down). Perfect for bots!
+**Note:** The free tier Web Service may spin down after 15 minutes of inactivity on the HTTP endpoint. The bot will restart automatically when Render detects activity. For true 24/7 uptime, consider upgrading to a paid plan ($7/month).
 
 ---
 
