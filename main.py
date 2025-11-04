@@ -358,5 +358,13 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Start health check server for Render (Web Service requirement)
+    import os
+    if os.getenv('RENDER'):
+        from health_server import start_health_server
+        port = int(os.getenv('PORT', 10000))
+        start_health_server(port)
+        print(f"✅ Health server running on port {port} (for Render)")
+    
     asyncio.run(main())
 
