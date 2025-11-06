@@ -358,13 +358,14 @@ async def main():
 
 
 if __name__ == "__main__":
-    # Start health check server for Render (Web Service requirement)
+    # Start health check server for cloud deployment (Render/Fly.io)
     import os
-    if os.getenv('RENDER'):
+    if os.getenv('RENDER') or os.getenv('FLY_IO'):
         from health_server import start_health_server
         port = int(os.getenv('PORT', 10000))
         start_health_server(port)
-        print(f"✅ Health server running on port {port} (for Render)")
+        platform = "Fly.io" if os.getenv('FLY_IO') else "Render"
+        print(f"✅ Health server running on port {port} (for {platform})")
     
     asyncio.run(main())
 

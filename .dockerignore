@@ -1,0 +1,19 @@
+# Fly.io Docker ignore file
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+venv/
+ENV/
+env/
+config.json
+*.log
+.git
+.gitignore
+*.md
+.DS_Store
+.vscode/
+.idea/
+
