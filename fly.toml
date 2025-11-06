@@ -5,6 +5,8 @@
 
 app = 'quad-telegram-bot-sparkling-sea-4465'
 primary_region = 'arn'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
 
 [build]
 
@@ -12,6 +14,7 @@ primary_region = 'arn'
   PORT = '8080'
   FLY_IO = 'true'
 
+# Keep bot running 24/7 - no auto-stop
 [http_service]
   internal_port = 8080
   force_https = true
@@ -31,4 +34,9 @@ primary_region = 'arn'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+# Ensure machine stays alive
+[metrics]
+  port = 9091
+  path = "/metrics"
 
