@@ -119,9 +119,50 @@ python3 main.py
 
 ---
 
-## 🌐 Deploy to Render
+## 🚀 Deployment
 
-This bot is ready for **Render deployment** with the included configuration files.
+### ⭐ Recommended: Deploy to Fly.io (FREE 24/7!)
+
+**Why Fly.io?**
+- ✅ Truly free tier with 24/7 uptime (no sleeping!)
+- ✅ 3 shared VMs included (256MB RAM each)
+- ✅ 160GB bandwidth/month
+- ✅ Better for bots than Render's free tier
+
+**Quick Deploy:**
+
+1. **Install Fly CLI:**
+```bash
+curl -L https://fly.io/install.sh | sh
+```
+
+2. **Stop local bot:**
+```bash
+pkill -f "python3 main.py"
+```
+
+3. **Deploy:**
+```bash
+flyctl auth login
+flyctl launch  # Choose region, say No to databases
+flyctl secrets set BOT_TOKEN="8218401569:AAGoEpaiDo_7o4HCRFI4zufviKY5sUD4GO8"
+flyctl secrets set ADMIN_ID="your_telegram_user_id"
+flyctl deploy
+```
+
+4. **Configure in Telegram:**
+- Add bot to your group
+- Send `/set_group`
+- Send `/test_connection`
+- Done! 🎉
+
+**📖 Full Instructions:** See [FLY_DEPLOYMENT.md](FLY_DEPLOYMENT.md)
+
+---
+
+## 🌐 Alternative: Deploy to Render
+
+Render's free tier may sleep after inactivity. If you prefer Render:
 
 ### Render Deployment Steps
 
